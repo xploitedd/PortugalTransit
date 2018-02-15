@@ -1,0 +1,23 @@
+{
+  "name": "tpp_status_api",
+  "version": "1.0.0",
+  "description": "A transport system status checker api for the tpp app",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/iamkryfor/tpp_status_api.git"
+  },
+  "author": "iamkryfor",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/iamkryfor/tpp_status_api/issues"
+  },
+  "homepage": "https://github.com/iamkryfor/tpp_status_api#readme",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.2",
+    "request": "^2.83.0"
+  }
+}
