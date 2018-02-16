@@ -18,7 +18,7 @@ module.exports = {
 
         return 'NA';
     },
-    information: new InformationHandler('http://www.metrodoporto.pt/', $ => {
+    information: InformationHandler.getInformationHandler('http://www.metrodoporto.pt/', $ => {
         return new Promise((resolve, reject) => {
             var lines = {};
             $('.DestaqueRight_AREA ul li').each(function(i, elem) {

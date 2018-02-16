@@ -19,7 +19,7 @@ module.exports = {
             last_stop: 'AEROPORTO'
         },
     },
-    information: new InformationHandler('http://app.metrolisboa.pt/status/estado_Linhas.php', $ => {
+    information: InformationHandler.getInformationHandler('http://app.metrolisboa.pt/status/estado_Linhas.php', $ => {
         return new Promise((resolve, reject) => {
             var lines = {};
             $('table tr').each(function(i, elem) {

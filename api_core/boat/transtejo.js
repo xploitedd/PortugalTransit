@@ -1,7 +1,7 @@
 const InformationHandler = require('../InformationHandler');
 
 module.exports = {
-    information: new InformationHandler('http://www.transtejo.pt/', $ => {
+    information: InformationHandler.getInformationHandler('http://www.transtejo.pt/', $ => {
         return new Promise((resolve, reject) => {
             var connections = {};
             var connectionNumber = 0;

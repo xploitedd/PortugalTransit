@@ -1,6 +1,7 @@
 const request = require('request');
 const cheerio = require('cheerio');
 
+var informationHandlers = {};
 class InformationHandler {
     constructor(url, func, options = {}) {
         if (typeof url !== 'string' || typeof func !== 'function')
@@ -14,7 +15,12 @@ class InformationHandler {
 
         this._options = options;
 
-        setInterval(() => { this.getStatus(false); }, 120000);
+        setInterval(() => { 
+            console.log(`[INFO] Updating ${url} cache data!`);
+            this.getStatus(false); 
+        }, 120000); // 2 min
+
+        informationHandlers[url] = this;
     }
 
     async _getInfo() {
@@ -46,6 +52,12 @@ class InformationHandler {
         return info;
     }
 
+    static getInformationHandler(url, func, options = {}) {
+        if (!informationHandlers[url])
+            return new InformationHandler(url, func, options);
+
+        return informationHandlers[url];
+    }
 }
 
 module.exports = InformationHandler;
