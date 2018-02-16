@@ -1,8 +1,13 @@
 const restify = require('restify');
 const server = restify.createServer();
 const config = require('../config');
+const os = require('os');
 
 server.use(restify.plugins.queryParser());
+
+server.get('/', (req, res, next) => {
+    res.send({ message: `Running on ${os.hostname()}` })
+});
 
 server.get('/:type/:id/all', (req, res, next) => {
     var status;
