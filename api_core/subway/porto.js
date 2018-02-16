@@ -18,22 +18,22 @@ module.exports = {
 
         return 'NA';
     },
-    information: new InformationHandler('http://www.metrodoporto.pt/', ($) => {
+    information: new InformationHandler('http://www.metrodoporto.pt/', $ => {
         return new Promise((resolve, reject) => {
             var lines = {};
             $('.DestaqueRight_AREA ul li').each(function(i, elem) {
-                var lineName = $(this).children('.title').text();
-                var stops = lineName.split(' - ');
+                var line_name = $(this).children('.title').text();
+                var stops = line_name.split(' - ');
                 lines[i] = { 
-                    lineName: module.exports.convertLineNameToColor(lineName), 
+                    line_name: module.exports.convertLineNameToColor(line_name), 
                     status: $(this).children('.text').text(),
                     stops: {
-                        firstStop: stops[0].toUpperCase(),
-                        lastStop: stops[1].toUpperCase()
+                        first_stop: stops[0].toUpperCase(),
+                        last_stop: stops[1].toUpperCase()
                     } 
                 };
-                resolve(lines);
             });
+            resolve(lines);
         });
     })
 }

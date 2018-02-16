@@ -2,20 +2,24 @@ const request = require('request');
 const cheerio = require('cheerio');
 
 class InformationHandler {
-    constructor(url, func) {
+    constructor(url, func, options = {}) {
         if (typeof url !== 'string' || typeof func !== 'function')
             return;
 
-        this._url = url;
         this._func = func;
         this._cache = {};
 
-        setInterval(() => { this.getStatus(false); }, 60000);
+        if (Object.keys(options).length === 0 || !options['uri']) 
+            options['uri'] = url;
+
+        this._options = options;
+
+        setInterval(() => { this.getStatus(false); }, 120000);
     }
 
     async _getInfo() {
         const body = await new Promise((resolve, reject) => {
-            request(this._url, (err, res, body) => {
+            request(this._options, (err, res, body) => {
                 if (err) {
                     console.error(error);
                     reject(undefined);
@@ -29,7 +33,7 @@ class InformationHandler {
             return {};
 
         const chh = cheerio.load(body);
-        const res = await this._func(chh);
+        const res = await this._func(chh, body);
         return res;
     }
 
