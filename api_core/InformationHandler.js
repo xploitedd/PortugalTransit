@@ -18,7 +18,7 @@ class InformationHandler {
         setInterval(() => { 
             console.log(`[INFO] Updating ${url} cache data!`);
             this.getStatus(false); 
-        }, 120000); // 2 min
+        }, 120000); // 2 minutes
 
         informationHandlers[url] = this;
     }
