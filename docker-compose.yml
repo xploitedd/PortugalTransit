@@ -10,6 +10,9 @@ services:
           memory: 50M
       restart_policy:
         condition: on-failure
+      update_config:
+        parallelism: 1
+        delay: 10s
     ports:
       - "9030:9030"
     networks:
