@@ -1,4 +1,5 @@
-import { TransportType, Zone, MetroType } from '../TransportScraper'
+import { TransportType, Zone } from '../TransportScraper'
+import FormData from 'form-data'
 
 export class Barreiro extends Zone {
     constructor() {
@@ -7,11 +8,21 @@ export class Barreiro extends Zone {
         })
     }
 
-    public parseInformation(type: TransportType) {
-        return new Promise((resolve, reject) => {
-            this.getInformation(type, { method: 'POST', form: { getVehicles: true } }).then((body: string) => {
-                resolve(JSON.parse(body))
-            }).catch(reject)
-        })
+    public async parseInformation(type: TransportType, forceUpdate?: boolean): Promise<any> {
+        if (this.cache[type] && !forceUpdate)
+            return this.cache[type]
+
+        try {
+            const form: FormData = new FormData();
+            form.append('getVehicles', 'true')
+
+            const body: string = await this.getInformation(type, { method: 'POST', body: form })
+            const res = JSON.parse(body)
+
+            this.cache[type] = res
+            return res
+        } catch (err) {
+            return Promise.reject(err)
+        }
     }
 }

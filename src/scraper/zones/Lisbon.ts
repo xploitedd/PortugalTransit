@@ -1,4 +1,4 @@
-import { TransportType, Zone, MetroType } from '../TransportScraper'
+import { TransportType, Zone, SubwayType } from '../TransportScraper'
 
 export class Lisbon extends Zone {
     constructor() {
@@ -7,47 +7,63 @@ export class Lisbon extends Zone {
         })
     }
 
-    public parseInformation(type: TransportType) {
-        return new Promise((resolve, reject) => {
-            this.getInformation(type).then(body => {
-                const obj = this.getCheerioObject(body)
-                const lines: MetroType[] = []
+    public async parseInformation(type: TransportType, forceUpdate?: boolean): Promise<any> {
+        if (this.cache[type] && !forceUpdate)
+            return this.cache[type]
 
-                for (let i = 0; i < 4; ++i) {
-                    const fullName = Lisbon.getLineStateByIndex(i, true)
-                    const lineId = Lisbon.getLineStateByIndex(i)
+        try {
+            const body: string = await this.getInformation(type)
+            const obj = this.getCheerioObject(body)
+            let res: any
 
-                    let trainFrequency: string
-                    let statusMessage: string
-                    let statusCode: number
+            switch(type) {
+                case TransportType.SUBWAY:
+                    res = Lisbon.getSubwayStatus(obj)
+                    break
+            }
 
-                    obj(lineId + ' div[id]').each((k, elem) => {
-                        let data = elem.children[1].data
-                        if (k % 2 === 0) {
-                            trainFrequency = data.slice(2) || 'N/A'
-                        } else {
-                            if (trainFrequency === 'N/A')
-                                statusMessage = 'Serviço encerrado.'
-                            else
-                                statusMessage = data
+            this.cache[type] = res
+            return res
+        } catch (err) {
+            return Promise.reject(err)
+        }
+    }
 
-                            statusCode = Lisbon.convertStatusMessageToCode(data)
-                        }
-                    })
+    private static getSubwayStatus(obj: CheerioStatic) {
+        const lines: SubwayType[] = []
+        for (let i = 0; i < 4; ++i) {
+            const fullName = Lisbon.getLineStateByIndex(i, true)
+            const lineId = Lisbon.getLineStateByIndex(i)
 
-                    lines[i] = {
-                        fullName,
-                        status: {
-                            message: statusMessage,
-                            code: statusCode
-                        },
-                        trainFrequency
-                    }
+            let trainFrequency: string
+            let statusMessage: string
+            let statusCode: number
+
+            obj(lineId + ' div[id]').each((k: number, elem: any) => {
+                let data = elem.children[1].data
+                if (k % 2 === 0) {
+                    trainFrequency = data.slice(2) || 'N/A'
+                } else {
+                    if (trainFrequency === 'N/A')
+                        statusMessage = 'Serviço encerrado.'
+                    else
+                        statusMessage = data
+
+                    statusCode = Lisbon.convertStatusMessageToCode(data)
                 }
+            })
 
-                resolve(lines)
-            }).catch(reject)
-        })
+            lines[i] = {
+                fullName,
+                status: {
+                    message: statusMessage,
+                    code: statusCode
+                },
+                trainFrequency
+            }
+        }
+
+        return lines
     }
 
     private static getLineStateByIndex(index: number, fullName?: boolean): string {

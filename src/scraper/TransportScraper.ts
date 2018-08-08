@@ -1,6 +1,6 @@
 import fs from 'fs'
 import path from 'path'
-import request from 'request'
+import fetch, { RequestInit } from 'node-fetch'
 import cheerio from 'cheerio'
 
 const zones: { [key: string]: Zone } = {}
@@ -19,16 +19,7 @@ export class TransportScraper {
 
     public static convertStringToType(str: string): TransportType {
         str = str.toUpperCase()
-        switch(str) {
-            case 'SUBWAY':
-                return TransportType.SUBWAY
-            case 'BUS':
-                return TransportType.BUS
-            case 'FERRY':
-                return TransportType.FERRY
-            default: 
-                return undefined
-        }
+        return (<any>TransportType)[str]
     }
 
     private static loadZones() {
@@ -58,35 +49,53 @@ export class TransportScraper {
 export abstract class Zone {
     public zoneName: string
     public transports: { [key: number]: string }
+    protected cache: { [key: number]: (SubwayType | BusType | any)[] } = {} // remove any in the future
 
-    constructor(zoneName: string, transports: { [key: number]: string }) {
+    constructor(zoneName: string, transports: { [key: number]: string }, updateCacheMin: number = 2) {
         this.zoneName = zoneName
         this.transports = transports
+
+        const updateCacheMS = updateCacheMin * 60000
+
+        this.updateCache()
+        setInterval(() => this.updateCache(), updateCacheMS)
 
         zones[zoneName] = this
     }
 
-    public abstract parseInformation(type: TransportType): any
-
-    protected async getInformation(type: TransportType, options?: request.CoreOptions) {
-        const requestUrl = this.transports[type]
-        return new Promise((resolve, reject) => {
-            if (!requestUrl)
-                return reject(`This transport method doesn't exist for the specified zone`)
-
-            request(requestUrl, options, (err, req, body) => {
-                if (err || req.statusCode !== 200)
-                    return reject(`${err | req.statusCode}`)
-
-                resolve(body)
-            })
-        })
+    public async updateCache() {
+        try {
+            for (const transport in this.transports) {
+                console.log(`Updating zone: ${this.zoneName} type: ${transport} cache!`)
+                const transportId = parseInt(transport)
+                if (!isNaN(transportId))
+                    await this.parseInformation(transportId, true)    
+            }
+        } catch (err) {
+            console.error(err)
+        }
     }
 
-    protected getCheerioObject(body: any): CheerioStatic {
-        if (typeof body !== 'string') 
-            return null
+    public abstract async parseInformation(type: TransportType, forceUpdate?: boolean): Promise<any>
 
+    protected async getInformation(type: TransportType, options?: RequestInit): Promise<string> {
+        try {
+            const requestUrl = this.transports[type]
+            const res = await fetch(requestUrl, options)
+            if (res.status !== 200) 
+                return Promise.reject(`Error Fetching: status code ${res.status}`)
+
+            const body = await res.text()
+            if (typeof body !== 'string')
+                return Promise.reject(`Error Fetching: body is not a string`)
+
+            return body
+        } catch (err) {
+            return Promise.reject(err)
+        }
+    }
+
+    protected getCheerioObject(body: string): CheerioStatic {
         return cheerio.load(body)
     }
 }
@@ -95,8 +104,14 @@ export enum TransportType {
     FERRY, SUBWAY, BUS
 }
 
-export type MetroType = {
+export type SubwayType = {
     fullName: string,
     status: { [key: string]: any },
     trainFrequency: string
+}
+
+export type BusType = {
+    stopId: string,
+    stopName: string,
+    timeTable: { [key: string]: string }
 }
