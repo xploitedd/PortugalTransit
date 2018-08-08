@@ -1,24 +1,37 @@
 {
   "name": "tpp_status_api",
-  "version": "1.0.0",
-  "description": "A transport system status checker api for the tpp app",
-  "main": "index.js",
+  "version": "2.0.0",
+  "description": "A status checker for portuguese transports ",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "npm run serve",
+    "build": "npm run build-ts",
+    "bs": "tsc && npm run serve",
+    "serve": "node dist/app.js",
+    "nodemon": "nodemon dist/app.js",
+    "build-ts": "tsc",
+    "watch-ts": "tsc -w",
+    "tslint": "tslint -c tslint.json -p tsconfig.json"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/iamkryfor/tpp_status_api.git"
+    "url": "git+https://github.com/iamkryfor/PortugalTransit.git"
   },
   "author": "iamkryfor",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/iamkryfor/tpp_status_api/issues"
+    "url": "https://github.com/iamkryfor/PortugalTransit/issues"
   },
-  "homepage": "https://github.com/iamkryfor/tpp_status_api#readme",
+  "homepage": "https://github.com/iamkryfor/PortugalTransit#readme",
   "dependencies": {
+    "@types/chalk": "^2.2.0",
+    "@types/cheerio": "^0.22.8",
+    "@types/request": "^2.47.1",
+    "@types/restify": "^7.2.3",
+    "@types/twitter": "0.0.28",
+    "chalk": "^2.4.1",
     "cheerio": "^1.0.0-rc.2",
-    "request": "^2.83.0",
-    "restify": "^6.3.4"
+    "request": "^2.87.0",
+    "restify": "^7.2.1",
+    "twitter": "^1.7.1"
   }
 }
