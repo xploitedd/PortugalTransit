@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import fetch, { RequestInit } from 'node-fetch'
 import cheerio from 'cheerio'
+import EventEmitter from 'events'
 
 const zones: { [key: string]: Zone } = {}
 export class TransportScraper {
@@ -46,17 +47,21 @@ export class TransportScraper {
     }
 }
 
-export abstract class Zone {
+export abstract class Zone extends EventEmitter {
     public zoneName: string
     public transports: { [key: number]: string }
     protected cache: { [key: number]: (SubwayType | BusType | any)[] } = {} // remove any in the future
 
     constructor(zoneName: string, transports: { [key: number]: string }, updateCacheMin: number = 2) {
+        super()
+
         this.zoneName = zoneName
         this.transports = transports
 
-        const updateCacheMS = updateCacheMin * 60000
+        this.on('cacheChange', (zoneName, transportId) => 
+            console.log(`[${new Date().toISOString()}][Cache] Updating zone ${zoneName} - ${TransportType[transportId]}`))
 
+        const updateCacheMS = updateCacheMin * 60000
         this.updateCache()
         setInterval(() => this.updateCache(), updateCacheMS)
 
@@ -66,10 +71,15 @@ export abstract class Zone {
     public async updateCache() {
         try {
             for (const transport in this.transports) {
-                console.log(`Updating zone: ${this.zoneName} type: ${transport} cache!`)
                 const transportId = parseInt(transport)
-                if (!isNaN(transportId))
-                    await this.parseInformation(transportId, true)    
+                if (!isNaN(transportId)) {
+                    const newCache: (SubwayType | BusType | any)[] = await this.parseInformation(transportId, true) // remove any in the future
+                    if (!this.cache[transportId] || newCache.toString() !== this.cache[transportId].toString())
+                    {
+                        this.emit('cacheChange', this.zoneName, transportId)
+                        this.cache[transportId] = newCache
+                    }
+                }
             }
         } catch (err) {
             console.error(err)

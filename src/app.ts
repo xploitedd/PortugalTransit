@@ -1,5 +1,5 @@
-import { WebServer } from './webserver'
+import WebServer from './webserver'
 
-new WebServer()
+WebServer.startWebServer(3000) // starts the web server on port 3000
 
 // 3rd step: send info to twitter

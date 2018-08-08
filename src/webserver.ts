@@ -2,8 +2,8 @@ import os from 'os'
 import restify from 'restify'
 import { TransportType, TransportScraper, Zone } from './scraper/TransportScraper'
 
-export class WebServer {
-    constructor() {
+export default class WebServer {
+    public static startWebServer(port: number) {
         const server = restify.createServer()
         const Transports = new TransportScraper()
 
@@ -39,8 +39,8 @@ export class WebServer {
             })
         })
 
-        server.listen(3000, () => {
-            console.log('Server is listening')
+        server.listen(port, () => {
+            console.log(`[Web] Server is up on port ${port}`)
         })
     }
 }

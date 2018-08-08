@@ -18,8 +18,7 @@ export class Barreiro extends Zone {
 
             const body: string = await this.getInformation(type, { method: 'POST', body: form })
             const res = JSON.parse(body)
-
-            this.cache[type] = res
+            
             return res
         } catch (err) {
             return Promise.reject(err)

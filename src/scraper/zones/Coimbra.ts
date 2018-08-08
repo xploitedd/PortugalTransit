@@ -38,7 +38,6 @@ export class Coimbra extends Zone {
                 }
             }
 
-            this.cache[type] = stops
             return stops
         } catch (err) {
             return Promise.reject(err)

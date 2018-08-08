@@ -22,7 +22,6 @@ export class Lisbon extends Zone {
                     break
             }
 
-            this.cache[type] = res
             return res
         } catch (err) {
             return Promise.reject(err)
