@@ -1,6 +1,6 @@
 import os from 'os'
 import restify from 'restify'
-import { TransportType, TransportScraper, Zone, MetroType } from './scraper/TransportScraper'
+import { TransportType, TransportScraper, Zone } from './scraper/TransportScraper'
 
 export class WebServer {
     constructor() {

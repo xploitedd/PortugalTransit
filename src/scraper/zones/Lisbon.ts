@@ -1,5 +1,4 @@
 import { TransportType, Zone, MetroType } from '../TransportScraper'
-import { resolve } from 'path';
 
 export class Lisbon extends Zone {
     constructor() {
