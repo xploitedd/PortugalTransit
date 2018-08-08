@@ -26,13 +26,11 @@ export class Lisbon extends Zone {
                         if (k % 2 === 0) {
                             trainFrequency = data.slice(2) || 'N/A'
                         } else {
-                            if (trainFrequency === 'N/A') {
-                                statusMessage = 'Linha Fechada'
-                                statusCode = 0
-                                return
-                            }
+                            if (trainFrequency === 'N/A')
+                                statusMessage = 'Serviço encerrado.'
+                            else
+                                statusMessage = data
 
-                            statusMessage = data
                             statusCode = Lisbon.convertStatusMessageToCode(data)
                         }
                     })
@@ -71,8 +69,10 @@ export class Lisbon extends Zone {
         switch(message) {
             case 'Circulação normal.':
                 return 1
-            default:
+            case 'Serviço encerrado.':
                 return 0
+            default: 
+                return 2
         }
     }
 }
