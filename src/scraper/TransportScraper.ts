@@ -63,7 +63,7 @@ export abstract class Zone extends EventEmitter {
 
         this.on('cacheChange', (zoneName, transportId, lastCache) => {
             console.log(`[${new Date().toISOString()}][Cache] Updating zone ${zoneName} - ${TransportType[transportId]}`)
-            if ((zoneName === 'Lisbon' || zoneName === 'Porto') && transportId === 1)
+            if ((zoneName === 'Lisboa' || zoneName === 'Porto') && transportId === 1)
                 this.postToTwitter(transportId, lastCache)
         })
 
