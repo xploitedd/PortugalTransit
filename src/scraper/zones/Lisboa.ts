@@ -1,8 +1,8 @@
 import { TransportType, Zone, SystemType } from '../TransportScraper'
 
-export class Lisbon extends Zone {
+export class Lisboa extends Zone {
     constructor() {
-        super('Lisbon', { 
+        super('Lisboa', { 
             [TransportType.SUBWAY]: 'https://www.metrolisboa.pt/wp-admin/admin-ajax.php?action=estado_linhas_ajax_action',
         })
     }
@@ -14,11 +14,11 @@ export class Lisbon extends Zone {
 
         switch(si.status.code) {
             case 0: 
-                return `😡😡😡 ${this.zoneName} às ${date.getHours()}h e ${date.getMinutes()} ${si.routeName}m\n${si.status.message}`
+                return `😡😡😡 ${this.zoneName} às ${date.getHours()}h e ${date.getMinutes()} ${si.routeName}\n${si.status.message}`
             case 1:
-                return `😄😄😄 ${this.zoneName} às ${date.getHours()}h e ${date.getMinutes()} ${si.routeName}m\nO serviço foi restaurado à normalidade\nFrequência de Comboios: ${si.routeFrequency}`
+                return `😄😄😄 ${this.zoneName} às ${date.getHours()}h e ${date.getMinutes()} ${si.routeName}\nO serviço foi restaurado à normalidade\nFrequência de Comboios: ${si.routeFrequency}`
             default:
-                return `😐😐😐 ${this.zoneName} às ${date.getHours()}h e ${date.getMinutes()} ${si.routeName}m\n${si.status.message}`
+                return `😐😐😐 ${this.zoneName} às ${date.getHours()}h e ${date.getMinutes()} ${si.routeName}\n${si.status.message}`
         }
     }
 
