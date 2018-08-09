@@ -7,6 +7,28 @@ export class Lisbon extends Zone {
         })
     }
 
+    public async getTwitterInfo(type: TransportType): Promise<string[] | boolean> {
+        const finalArr: string[] = []
+        const date = new Date()
+        const info: SubwayType[] = await this.parseInformation(type)
+        for (let i = 0; i < info.length; ++i) {
+            const si: SubwayType = info[i]
+            switch(si.status.code) {
+                case 0: 
+                    finalArr[i] = `😡😡😡 ${this.zoneName}\n[${date.getHours()}:${date.getMinutes()} ${si.fullName}] - ${si.status.message}`
+                    break
+                case 1:
+                    finalArr[i] = `😄😄😄 ${this.zoneName}\n[${date.getHours()}:${date.getMinutes()} ${si.fullName}] - ${si.status.message}\nFrequência de Comboios: ${si.trainFrequency}`
+                    break
+                default:
+                    finalArr[i] = `😐😐😐 ${this.zoneName}\n[${date.getHours()}:${date.getMinutes()} ${si.fullName}] - ${si.status.message}`
+                    break
+            }
+        }
+        
+        return finalArr
+    }
+
     public async parseInformation(type: TransportType, forceUpdate?: boolean): Promise<any> {
         if (this.cache[type] && !forceUpdate)
             return this.cache[type]

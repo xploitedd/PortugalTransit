@@ -3,10 +3,8 @@ import restify from 'restify'
 import { TransportType, TransportScraper, Zone } from './scraper/TransportScraper'
 
 export default class WebServer {
-    public static startWebServer(port: number) {
+    public static startWebServer(port: number, Transports: TransportScraper) {
         const server = restify.createServer()
-        const Transports = new TransportScraper()
-
         server.use(restify.plugins.queryParser())
 
         server.get('/', (_, res, next) => {

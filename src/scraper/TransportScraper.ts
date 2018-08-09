@@ -3,11 +3,14 @@ import path from 'path'
 import fetch, { RequestInit } from 'node-fetch'
 import cheerio from 'cheerio'
 import EventEmitter from 'events'
+import Twitter from '../twitter/Twitter';
 
 const zones: { [key: string]: Zone } = {}
+let twitter: Twitter
 export class TransportScraper {
-    constructor() {
+    constructor(tw: Twitter) {
         TransportScraper.loadZones()
+        twitter = tw
     }
 
     public getZone(zoneName: string): Zone {
@@ -58,14 +61,27 @@ export abstract class Zone extends EventEmitter {
         this.zoneName = zoneName
         this.transports = transports
 
-        this.on('cacheChange', (zoneName, transportId) => 
-            console.log(`[${new Date().toISOString()}][Cache] Updating zone ${zoneName} - ${TransportType[transportId]}`))
+        this.on('cacheChange', (zoneName, transportId) => {
+            console.log(`[${new Date().toISOString()}][Cache] Updating zone ${zoneName} - ${TransportType[transportId]}`)
+            if (zoneName === 'Lisbon' || zoneName === 'Porto')
+                this.postToTwitter(transportId)
+        })
 
         const updateCacheMS = updateCacheMin * 60000
         this.updateCache()
         setInterval(() => this.updateCache(), updateCacheMS)
 
         zones[zoneName] = this
+    }
+
+    public async postToTwitter(type: TransportType) {
+        try {
+            const twitterInfo: string[] | boolean = await this.getTwitterInfo(type)
+            if (twitterInfo && typeof twitterInfo !== 'boolean')
+                twitterInfo.forEach(v => twitter.req('statuses/update', { method: 'POST', formData: { status: v } }))
+        } catch (err) {
+            console.error(err)
+        }
     }
 
     public async updateCache() {
@@ -85,6 +101,8 @@ export abstract class Zone extends EventEmitter {
             console.error(err)
         }
     }
+
+    public abstract async getTwitterInfo(type: TransportType): Promise<string[] | boolean>
 
     public abstract async parseInformation(type: TransportType, forceUpdate?: boolean): Promise<any>
 
@@ -114,14 +132,14 @@ export enum TransportType {
     FERRY, SUBWAY, BUS
 }
 
-export type SubwayType = {
-    fullName: string,
-    status: { [key: string]: any },
+export interface SubwayType {
+    fullName: string
+    status: { [key: string]: string | number }
     trainFrequency: string
 }
 
-export type BusType = {
-    stopId: string,
-    stopName: string,
+export interface BusType {
+    stopId: string
+    stopName: string
     timeTable: { [key: string]: string }
 }

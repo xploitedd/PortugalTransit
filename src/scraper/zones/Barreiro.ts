@@ -1,5 +1,5 @@
-import { TransportType, Zone } from '../TransportScraper'
-import FormData from 'form-data'
+import FormData from 'form-data';
+import { TransportType, Zone } from '../TransportScraper';
 
 export class Barreiro extends Zone {
     constructor() {
@@ -8,12 +8,14 @@ export class Barreiro extends Zone {
         })
     }
 
+    public async getTwitterInfo(type: TransportType): Promise<string[] | boolean> { return false }
+
     public async parseInformation(type: TransportType, forceUpdate?: boolean): Promise<any> {
         if (this.cache[type] && !forceUpdate)
             return this.cache[type]
 
         try {
-            const form: FormData = new FormData();
+            const form: FormData = new FormData()
             form.append('getVehicles', 'true')
 
             const body: string = await this.getInformation(type, { method: 'POST', body: form })
