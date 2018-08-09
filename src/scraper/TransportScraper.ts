@@ -77,7 +77,7 @@ export abstract class Zone extends EventEmitter {
     public async postToTwitter(type: TransportType, lastCache: SystemType[]) {
         try {
             const newCache = this.cache[type]
-            for (let i = 0; i < lastCache.length; ++i) {
+            for (let i = 0; i < newCache.length; ++i) {
                 const ncache = newCache[i]
                 const ncacheStatus = ncache.status.code
                 const ncacheFreq = ncache.routeFrequency
