@@ -53,7 +53,7 @@ export class TransportScraper {
 export abstract class Zone extends EventEmitter {
     public zoneName: string
     public transports: { [key: number]: string }
-    protected cache: { [key: number]: (SubwayType | BusType | any)[] } = {} // remove any in the future
+    protected cache: { [key: number]: SystemType[] } = {}
 
     constructor(zoneName: string, transports: { [key: number]: string }, updateCacheMin: number = 2) {
         super()
@@ -61,10 +61,10 @@ export abstract class Zone extends EventEmitter {
         this.zoneName = zoneName
         this.transports = transports
 
-        this.on('cacheChange', (zoneName, transportId) => {
+        this.on('cacheChange', (zoneName, transportId, lastCache) => {
             console.log(`[${new Date().toISOString()}][Cache] Updating zone ${zoneName} - ${TransportType[transportId]}`)
-            if (zoneName === 'Lisbon' || zoneName === 'Porto')
-                this.postToTwitter(transportId)
+            if ((zoneName === 'Lisbon' || zoneName === 'Porto') && transportId === 1 && lastCache)
+                this.postToTwitter(transportId, lastCache)
         })
 
         const updateCacheMS = updateCacheMin * 60000
@@ -74,11 +74,22 @@ export abstract class Zone extends EventEmitter {
         zones[zoneName] = this
     }
 
-    public async postToTwitter(type: TransportType) {
+    public async postToTwitter(type: TransportType, lastCache: SystemType[]) {
         try {
-            const twitterInfo: string[] | boolean = await this.getTwitterInfo(type)
-            if (twitterInfo && typeof twitterInfo !== 'boolean')
-                twitterInfo.forEach(v => twitter.req('statuses/update', { method: 'POST', formData: { status: v } }))
+            const newCache = this.cache[type]
+            for (let i = 0; i < lastCache.length; ++i) {
+                const ncache = newCache[i]
+                const ncacheStatus = ncache.status.code
+                const ncacheFreq = ncache.routeFrequency
+
+                const lcache = lastCache[i]
+                const lcacheStatus = lcache.status.code
+                const lcacheFreq = lcache.routeFrequency
+
+                const twitterInfo: string | boolean = await this.getTwitterInfo(type, i)
+                if ((lcacheStatus === 1 && ncacheStatus !== 1) || (ncacheFreq !== lcacheFreq))
+                    twitter.req('statuses/update', { method: 'POST', formData: { status: twitterInfo } })
+            }  
         } catch (err) {
             console.error(err)
         }
@@ -89,11 +100,12 @@ export abstract class Zone extends EventEmitter {
             for (const transport in this.transports) {
                 const transportId = parseInt(transport)
                 if (!isNaN(transportId)) {
-                    const newCache: (SubwayType | BusType | any)[] = await this.parseInformation(transportId, true) // remove any in the future
-                    if (!this.cache[transportId] || newCache.toString() !== this.cache[transportId].toString())
+                    const newCache: SystemType[] = await this.parseInformation(transportId, true)
+                    if (!this.cache[transportId] || JSON.stringify(newCache) !== JSON.stringify(this.cache[transportId]))
                     {
-                        this.emit('cacheChange', this.zoneName, transportId)
+                        const lastCache: SystemType[] = this.cache[transportId]
                         this.cache[transportId] = newCache
+                        this.emit('cacheChange', this.zoneName, transportId, lastCache)
                     }
                 }
             }
@@ -102,7 +114,7 @@ export abstract class Zone extends EventEmitter {
         }
     }
 
-    public abstract async getTwitterInfo(type: TransportType): Promise<string[] | boolean>
+    public abstract async getTwitterInfo(type: TransportType, lineNumber: number): Promise<string | boolean>
 
     public abstract async parseInformation(type: TransportType, forceUpdate?: boolean): Promise<any>
 
@@ -132,14 +144,11 @@ export enum TransportType {
     FERRY, SUBWAY, BUS
 }
 
-export interface SubwayType {
-    fullName: string
-    status: { [key: string]: string | number }
-    trainFrequency: string
-}
-
-export interface BusType {
-    stopId: string
-    stopName: string
-    timeTable: { [key: string]: string }
+export interface SystemType {
+    routeName: string
+    routeId: string | number
+    routeFrequency?: string | number
+    status?: { [key: string]: any }
+    timeTable?: { [key: string]: string }
+    stops?: { [key: string]: string }
 }

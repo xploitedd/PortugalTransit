@@ -1,4 +1,4 @@
-import { TransportType, Zone, SubwayType } from '../TransportScraper'
+import { TransportType, Zone, SystemType } from '../TransportScraper'
 
 export class Lisbon extends Zone {
     constructor() {
@@ -7,26 +7,19 @@ export class Lisbon extends Zone {
         })
     }
 
-    public async getTwitterInfo(type: TransportType): Promise<string[] | boolean> {
-        const finalArr: string[] = []
+    public async getTwitterInfo(type: TransportType, lineNumber: number): Promise<string | boolean> {
         const date = new Date()
-        const info: SubwayType[] = await this.parseInformation(type)
-        for (let i = 0; i < info.length; ++i) {
-            const si: SubwayType = info[i]
-            switch(si.status.code) {
-                case 0: 
-                    finalArr[i] = `😡😡😡 ${this.zoneName}\n[${date.getHours()}:${date.getMinutes()} ${si.fullName}] - ${si.status.message}`
-                    break
-                case 1:
-                    finalArr[i] = `😄😄😄 ${this.zoneName}\n[${date.getHours()}:${date.getMinutes()} ${si.fullName}] - ${si.status.message}\nFrequência de Comboios: ${si.trainFrequency}`
-                    break
-                default:
-                    finalArr[i] = `😐😐😐 ${this.zoneName}\n[${date.getHours()}:${date.getMinutes()} ${si.fullName}] - ${si.status.message}`
-                    break
-            }
+        const info: SystemType[] = await this.parseInformation(type)
+        const si: SystemType = info[lineNumber]
+
+        switch(si.status.code) {
+            case 0: 
+                return `😡😡😡 ${this.zoneName} às ${date.getHours()}h e ${date.getMinutes()} ${si.routeName}m\n${si.status.message}`
+            case 1:
+                return `😄😄😄 ${this.zoneName} às ${date.getHours()}h e ${date.getMinutes()} ${si.routeName}m\nO serviço foi restaurado à normalidade\nFrequência de Comboios: ${si.routeFrequency}`
+            default:
+                return `😐😐😐 ${this.zoneName} às ${date.getHours()}h e ${date.getMinutes()} ${si.routeName}m\n${si.status.message}`
         }
-        
-        return finalArr
     }
 
     public async parseInformation(type: TransportType, forceUpdate?: boolean): Promise<any> {
@@ -51,21 +44,21 @@ export class Lisbon extends Zone {
     }
 
     private static getSubwayStatus(obj: CheerioStatic) {
-        const lines: SubwayType[] = []
+        const lines: SystemType[] = []
         for (let i = 0; i < 4; ++i) {
-            const fullName = Lisbon.getLineStateByIndex(i, true)
+            const routeName = Lisbon.getLineStateByIndex(i, true)
             const lineId = Lisbon.getLineStateByIndex(i)
 
-            let trainFrequency: string
+            let routeFrequency: string
             let statusMessage: string
             let statusCode: number
 
             obj(lineId + ' div[id]').each((k: number, elem: any) => {
                 let data = elem.children[1].data
                 if (k % 2 === 0) {
-                    trainFrequency = data.slice(2) || 'N/A'
+                    routeFrequency = data.slice(2) || 'N/A'
                 } else {
-                    if (trainFrequency === 'N/A')
+                    if (routeFrequency === 'N/A')
                         statusMessage = 'Serviço encerrado.'
                     else
                         statusMessage = data
@@ -75,12 +68,13 @@ export class Lisbon extends Zone {
             })
 
             lines[i] = {
-                fullName,
+                routeName,
+                routeId: i,
+                routeFrequency,
                 status: {
                     message: statusMessage,
                     code: statusCode
-                },
-                trainFrequency
+                }
             }
         }
 
