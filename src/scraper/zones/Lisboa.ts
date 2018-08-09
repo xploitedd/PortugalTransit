@@ -33,7 +33,7 @@ export class Lisboa extends Zone {
 
             switch(type) {
                 case TransportType.SUBWAY:
-                    res = Lisbon.getSubwayStatus(obj)
+                    res = Lisboa.getSubwayStatus(obj)
                     break
             }
 
@@ -46,8 +46,8 @@ export class Lisboa extends Zone {
     private static getSubwayStatus(obj: CheerioStatic) {
         const lines: SystemType[] = []
         for (let i = 0; i < 4; ++i) {
-            const routeName = Lisbon.getLineStateByIndex(i, true)
-            const lineId = Lisbon.getLineStateByIndex(i)
+            const routeName = Lisboa.getLineStateByIndex(i, true)
+            const lineId = Lisboa.getLineStateByIndex(i)
 
             let routeFrequency: string
             let statusMessage: string
@@ -63,7 +63,7 @@ export class Lisboa extends Zone {
                     else
                         statusMessage = data
 
-                    statusCode = Lisbon.convertStatusMessageToCode(statusMessage)
+                    statusCode = Lisboa.convertStatusMessageToCode(statusMessage)
                 }
             })
 
