@@ -14,11 +14,11 @@ export class Lisboa extends Zone {
 
         switch(si.status.code) {
             case 0: 
-                return `😡😡😡 🕓${date.getHours()}:${date.getMinutes()}🕓\n${this.zoneName} - ${si.routeName}\n${si.status.message}`
+                return `😡😡😡 ${date.getHours()} horas e ${date.getMinutes()} minutos\n${this.zoneName} - ${si.routeName}\n${si.status.message}`
             case 1:
-                return `😄😄😄 🕓${date.getHours()}:${date.getMinutes()}🕓\n${this.zoneName} - ${si.routeName}\nO serviço foi restaurado à normalidade\nFrequência de Comboios: ${si.routeFrequency}`
+                return `😄😄😄 ${date.getHours()} horas e ${date.getMinutes()} minutos\n${this.zoneName} - ${si.routeName}\nO serviço foi restaurado à normalidade\nFrequência de Comboios: ${si.routeFrequency}`
             default:
-                return `😐😐😐 🕓${date.getHours()}:${date.getMinutes()}🕓\n${this.zoneName} - ${si.routeName}\n${si.status.message}`
+                return `😐😐😐 ${date.getHours()} horas e ${date.getMinutes()} minutos\n${this.zoneName} - ${si.routeName}\n${si.status.message}`
         }
     }
 
