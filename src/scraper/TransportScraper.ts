@@ -63,7 +63,7 @@ export abstract class Zone extends EventEmitter {
 
         this.on('cacheChange', (zoneName, transportId, lastCache) => {
             console.log(`[${new Date().toISOString()}][Cache] Updating zone ${zoneName} - ${TransportType[transportId]}`)
-            if ((zoneName === 'Lisbon' || zoneName === 'Porto') && transportId === 1 && lastCache)
+            if ((zoneName === 'Lisbon' || zoneName === 'Porto') && transportId === 1)
                 this.postToTwitter(transportId, lastCache)
         })
 
@@ -82,11 +82,16 @@ export abstract class Zone extends EventEmitter {
                 const ncacheStatus = ncache.status.code
                 const ncacheFreq = ncache.routeFrequency
 
+                const twitterInfo: string | boolean = await this.getTwitterInfo(type, i)
+                if (!lastCache && ncacheStatus !== 1) {
+                    twitter.req('statuses/update', { method: 'POST', formData: { status: twitterInfo } })
+                    break
+                }
+
                 const lcache = lastCache[i]
                 const lcacheStatus = lcache.status.code
                 const lcacheFreq = lcache.routeFrequency
 
-                const twitterInfo: string | boolean = await this.getTwitterInfo(type, i)
                 if ((lcacheStatus === 1 && ncacheStatus !== 1) || (ncacheFreq !== lcacheFreq))
                     twitter.req('statuses/update', { method: 'POST', formData: { status: twitterInfo } })
             }  

@@ -59,11 +59,11 @@ export class Lisbon extends Zone {
                     routeFrequency = data.slice(2) || 'N/A'
                 } else {
                     if (routeFrequency === 'N/A')
-                        statusMessage = 'Serviço encerrado.'
+                        statusMessage = 'Existem problemas na circulação.'
                     else
                         statusMessage = data
 
-                    statusCode = Lisbon.convertStatusMessageToCode(data)
+                    statusCode = Lisbon.convertStatusMessageToCode(statusMessage)
                 }
             })
 
