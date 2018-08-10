@@ -86,7 +86,7 @@ export abstract class Zone extends EventEmitter {
                 const ncacheFreq = ncache.routeFrequency
 
                 const twitterInfo: string | boolean = await this.getTwitterInfo(type, i)
-                if (!lastCache && ncacheStatus !== 1) {
+                if (!lastCache) {
                     twitter.req('statuses/update', { method: 'POST', formData: { status: twitterInfo } })
                 } else if (lastCache) {
                     const lcache = lastCache[i]
