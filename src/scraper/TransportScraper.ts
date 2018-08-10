@@ -81,21 +81,8 @@ export abstract class Zone extends EventEmitter {
         try {
             const newCache = this.cache[type]
             for (let i = 0; i < newCache.length; ++i) {
-                const ncache = newCache[i]
-                const ncacheStatus = ncache.status.code
-                const ncacheFreq = ncache.routeFrequency
-
                 const twitterInfo: string | boolean = await this.getTwitterInfo(type, i)
-                if (!lastCache) {
-                    twitter.req('statuses/update', { method: 'POST', formData: { status: twitterInfo } })
-                } else if (lastCache) {
-                    const lcache = lastCache[i]
-                    const lcacheStatus = lcache.status.code
-                    const lcacheFreq = lcache.routeFrequency
-
-                    if ((lcacheStatus === 1 && ncacheStatus !== 1) || (ncacheFreq !== lcacheFreq))
-                        twitter.req('statuses/update', { method: 'POST', formData: { status: twitterInfo } })
-                }
+                twitter.req('statuses/update', { method: 'POST', formData: { status: twitterInfo } })
             }  
         } catch (err) {
             console.error(err)
