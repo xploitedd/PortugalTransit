@@ -4,6 +4,7 @@ import fetch, { RequestInit } from 'node-fetch'
 import cheerio from 'cheerio'
 import EventEmitter from 'events'
 import Twitter from '../twitter/Twitter';
+import { DateTime } from 'luxon'
 
 const zones: { [key: string]: Zone } = {}
 let twitter: Twitter
@@ -54,15 +55,17 @@ export abstract class Zone extends EventEmitter {
     public zoneName: string
     public transports: { [key: number]: string }
     protected cache: { [key: number]: SystemType[] } = {}
+    protected timeZone: string
 
-    constructor(zoneName: string, transports: { [key: number]: string }, updateCacheMin: number = 2) {
+    constructor(zoneName: string, transports: { [key: number]: string }, timeZone: string = 'Europe/Lisbon', updateCacheMin: number = 2) {
         super()
 
         this.zoneName = zoneName
         this.transports = transports
+        this.timeZone = timeZone
 
         this.on('cacheChange', (zoneName, transportId, lastCache) => {
-            console.log(`[${new Date().toISOString()}][Cache] Updating zone ${zoneName} - ${TransportType[transportId]}`)
+            console.log(`[${this.getDateInZone()}][Cache] Updating zone ${zoneName} - ${TransportType[transportId]}`)
             if ((zoneName === 'Lisboa' || zoneName === 'Porto') && transportId === 1)
                 this.postToTwitter(transportId, lastCache)
         })
@@ -141,6 +144,10 @@ export abstract class Zone extends EventEmitter {
 
     protected getCheerioObject(body: string): CheerioStatic {
         return cheerio.load(body)
+    }
+
+    protected getDateInZone() {
+        return DateTime.local().setZone(this.timeZone).toFormat(`dd'/'LL'/'yy HH'h:'mm'm'`)
     }
 }
 
