@@ -12,14 +12,14 @@ export class Lisboa extends Zone {
         const info: SystemType[] = await this.parseInformation(type)
         const si: SystemType = info[lineNumber]
 
-        const patMsg = `Última atualização: ${date}\n${this.zoneName} - ${si.routeName}\n`
+        const patMsg = `Última atualização: ${date}\nLocal: ${this.zoneName} - ${si.routeName}\nStatus: `
         switch(si.status.code) {
             case 0: 
-                return `${patMsg}😡${si.status.message}`
+                return `${patMsg}😡 ${si.status.message}`
             case 1:
-                return `${patMsg}😄${si.status.message}\nFrequência neste momento: ${si.routeFrequency}`
+                return `${patMsg}😄 ${si.status.message}\nFrequência neste momento: ${si.routeFrequency}`
             default:
-                return `${patMsg}😐${si.status.message}`
+                return `${patMsg}😐 ${si.status.message}`
         }
     }
 
