@@ -5,13 +5,16 @@ import cheerio from 'cheerio'
 import EventEmitter from 'events'
 import Twitter from '../twitter/Twitter';
 import { DateTime } from 'luxon'
+import Emails from '../emails';
 
 const zones: { [key: string]: Zone } = {}
 let twitter: Twitter
+let mail: Emails
 export class TransportScraper {
-    constructor(tw: Twitter) {
+    constructor(tw: Twitter, ml: Emails) {
         TransportScraper.loadZones()
         twitter = tw
+        mail = ml
     }
 
     public getZone(zoneName: string): Zone {
@@ -85,6 +88,7 @@ export abstract class Zone extends EventEmitter {
                 twitter.req('statuses/update', { method: 'POST', formData: { status: twitterInfo } })
             }  
         } catch (err) {
+            mail.sendErrorEmail(err)
             console.error(err)
         }
     }
@@ -124,6 +128,7 @@ export abstract class Zone extends EventEmitter {
 
             return body
         } catch (err) {
+            mail.sendErrorEmail(err)
             return Promise.reject(err)
         }
     }

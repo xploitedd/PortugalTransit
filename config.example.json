@@ -5,5 +5,19 @@
         "secret_consumer_key": "",
         "access_token": "",
         "secret_access_token": ""
+    },
+    "mailjet": {
+        "smtp_username": "",
+        "smtp_password": "",
+        "from": {
+            "Name": "PortugalTransit API",
+            "Email": ""
+        },
+        "sysadmin": [
+            {
+                "Name": "",
+                "Email": ""
+            }
+        ]
     }
 }
