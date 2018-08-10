@@ -64,10 +64,10 @@ export abstract class Zone extends EventEmitter {
         this.transports = transports
         this.timeZone = timeZone
 
-        this.on('cacheChange', (zoneName, transportId, lastCache) => {
+        this.on('cacheChange', (zoneName, transportId) => {
             console.log(`[${this.getDateInZone()}][Cache] Updating zone ${zoneName} - ${TransportType[transportId]}`)
             if ((zoneName === 'Lisboa' || zoneName === 'Porto') && transportId === 1)
-                this.postToTwitter(transportId, lastCache)
+                this.postToTwitter(transportId)
         })
 
         const updateCacheMS = updateCacheMin * 60000
@@ -77,7 +77,7 @@ export abstract class Zone extends EventEmitter {
         zones[zoneName] = this
     }
 
-    public async postToTwitter(type: TransportType, lastCache: SystemType[]) {
+    public async postToTwitter(type: TransportType) {
         try {
             const newCache = this.cache[type]
             for (let i = 0; i < newCache.length; ++i) {
@@ -97,9 +97,8 @@ export abstract class Zone extends EventEmitter {
                     const newCache: SystemType[] = await this.parseInformation(transportId, true)
                     if (!this.cache[transportId] || JSON.stringify(newCache) !== JSON.stringify(this.cache[transportId]))
                     {
-                        const lastCache: SystemType[] = this.cache[transportId]
                         this.cache[transportId] = newCache
-                        this.emit('cacheChange', this.zoneName, transportId, lastCache)
+                        this.emit('cacheChange', this.zoneName, transportId)
                     }
                 }
             }
