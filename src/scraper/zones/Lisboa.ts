@@ -12,13 +12,14 @@ export class Lisboa extends Zone {
         const info: SystemType[] = await this.parseInformation(type)
         const si: SystemType = info[lineNumber]
 
+        const patMsg = `Atualizado: [${date.getDate()}/${date.getMonth()}/${date.getFullYear()} ${date.getHours()}h:${date.getMinutes()}m]\n${this.zoneName} - ${si.routeName}\n`
         switch(si.status.code) {
             case 0: 
-                return `😡😡😡 ${date.getHours()} horas e ${date.getMinutes()} minutos\n${this.zoneName} - ${si.routeName}\n${si.status.message}`
+                return `${patMsg}😡${si.status.message}`
             case 1:
-                return `😄😄😄 ${date.getHours()} horas e ${date.getMinutes()} minutos\n${this.zoneName} - ${si.routeName}\nO serviço foi restaurado à normalidade\nFrequência de Comboios: ${si.routeFrequency}`
+                return `${patMsg}😄${si.status.message}\nFrequência neste momento: ${si.routeFrequency}`
             default:
-                return `😐😐😐 ${date.getHours()} horas e ${date.getMinutes()} minutos\n${this.zoneName} - ${si.routeName}\n${si.status.message}`
+                return `${patMsg}😐${si.status.message}`
         }
     }
 
@@ -57,13 +58,18 @@ export class Lisboa extends Zone {
                 let data = elem.children[1].data
                 if (k % 2 === 0) {
                     routeFrequency = data.slice(2) || 'N/A'
+                    if (routeFrequency !== 'N/A') {
+                        const freqSpl = routeFrequency.split(':')
+                        routeFrequency = `${freqSpl[0]}m:${freqSpl[1]}s`
+                    }
                 } else {
-                    if (routeFrequency === 'N/A')
+                    statusCode = Lisboa.convertStatusMessageToCode(data)
+                    if ((routeFrequency === 'N/A' && statusCode !== 0) || statusCode === 2) {
                         statusMessage = 'Existem problemas na circulação.'
-                    else
+                        statusCode === 2
+                    } else {
                         statusMessage = data
-
-                    statusCode = Lisboa.convertStatusMessageToCode(statusMessage)
+                    }
                 }
             })
 
