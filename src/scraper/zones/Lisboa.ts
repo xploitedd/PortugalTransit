@@ -8,17 +8,21 @@ export class Lisboa extends Zone {
     }
 
     public async getTwitterInfo(type: TransportType, lineNumber: number): Promise<string | boolean> {
-        const info: SystemType[] = await this.parseInformation(type)
-        const si: SystemType = info[lineNumber]
+        try {
+            const info: SystemType[] = await this.parseInformation(type)
+            const si: SystemType = info[lineNumber]
 
-        const patMsg = `Local: ${this.zoneName} - ${si.routeName}\nStatus: `
-        switch(si.status.code) {
-            case 0: 
-                return `${patMsg}😡 ${si.status.message}`
-            case 1:
-                return `${patMsg}😄 ${si.status.message}\nFrequência neste momento: ${si.routeFrequency}`
-            default:
-                return `${patMsg}😐 ${si.status.message}`
+            const patMsg = `Local: ${this.zoneName} - ${si.routeName}\nStatus: `
+            switch(si.status.code) {
+                case 0: 
+                    return `${patMsg}😡 ${si.status.message}`
+                case 1:
+                    return `${patMsg}😄 ${si.status.message}\nFrequência neste momento: ${si.routeFrequency}`
+                default:
+                    return `${patMsg}😐 ${si.status.message}`
+            }
+        } catch (err) {
+            return Promise.reject(err)
         }
     }
 

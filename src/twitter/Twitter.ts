@@ -1,7 +1,7 @@
 import FormData from 'form-data';
-import { TwitterAuth, TwitterRequestOptions, TwitterTweet, TwitterError, TwitterUser } from './Interfaces';
+import { TwitterAuth, TwitterRequestOptions, TwitterTweet, TwitterError } from './Interfaces';
 import fetch from 'node-fetch'
-import oauth, { OAuth } from 'oauth'
+import { OAuth } from 'oauth'
 
 const TwitterAPIUrl: string = 'https://api.twitter.com/1.1/'
 const TwitterRequestTokenUrl: string = 'https://api.twitter.com/oauth/request_token'

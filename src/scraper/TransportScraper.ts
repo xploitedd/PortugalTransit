@@ -69,8 +69,8 @@ export abstract class Zone extends EventEmitter {
 
         this.on('cacheChange', (zoneName, transportId) => {
             console.log(`[${this.getDateInZone()}][Cache] Updating zone ${zoneName} - ${TransportType[transportId]}`)
-            if ((zoneName === 'Lisboa' || zoneName === 'Porto') && transportId === 1)
-                this.postToTwitter(transportId)
+            if ((zoneName === 'Lisboa' || zoneName === 'Porto') && transportId === 1){}
+                //this.postToTwitter(transportId)
         })
 
         const updateCacheMS = updateCacheMin * 60000
@@ -81,15 +81,13 @@ export abstract class Zone extends EventEmitter {
     }
 
     public async postToTwitter(type: TransportType) {
-        try {
-            const newCache = this.cache[type]
-            for (let i = 0; i < newCache.length; ++i) {
-                const twitterInfo: string | boolean = await this.getTwitterInfo(type, i)
-                twitter.req('statuses/update', { method: 'POST', formData: { status: twitterInfo } })
-            }  
-        } catch (err) {
-            mail.sendErrorEmail(err)
-            console.error(err)
+        const newCache = this.cache[type]
+        for (let i = 0; i < newCache.length; ++i) {
+            const twitterInfo: string | boolean = await this.getTwitterInfo(type, i)
+            twitter.req('statuses/update', { method: 'POST', formData: { status: twitterInfo } }).catch(err => {
+                mail.sendErrorEmail(err.message)
+                console.error(err)
+            })
         }
     }
 
