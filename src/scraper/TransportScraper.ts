@@ -105,7 +105,7 @@ export abstract class Zone extends EventEmitter {
             const newCache = await this.getCache(type)
             for (let i = 0; i < newCache.length; ++i) {
                 const twitterInfo: string | boolean = await this.getTwitterInfo(type, i)
-                await this.twitter.req('statuses/update', { method: 'POST', formData: { status: `${twitterInfo}\n#id(${os.hostname})` } })
+                await this.twitter.req('statuses/update', { method: 'POST', formData: { status: `${twitterInfo}\n#(server id: ${os.hostname})` } })
             }
         } catch (err) {
             this.mail.sendErrorEmail(err.message)
@@ -120,8 +120,6 @@ export abstract class Zone extends EventEmitter {
                 if (!isNaN(transportId)) {
                     const cache = await this.getCache(transportId)
                     const newCache: SystemType[] = await this.parseInformation(transportId, true)
-                    console.log(JSON.stringify(await this.getCache(1)))
-                    console.log(JSON.stringify(await this.parseInformation(1, true)))
                     if (!cache || JSON.stringify(newCache) !== JSON.stringify(cache))
                     {
                         this.redisClient.set(`${this.zoneName}_${transportId}`, JSON.stringify(newCache))
