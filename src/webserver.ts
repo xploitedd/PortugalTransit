@@ -12,19 +12,19 @@ export default class WebServer {
             return next()
         })
 
-        server.get('/:zone/:type', (req, res, next) => {
+        server.get('/:type/:zone', (req, res, next) => {
             const zoneString: string = req.params.zone
             const typeString: string = req.params.type
-
-            const zone: Zone = Transports.getZone(zoneString)
-            if (!zone) {
-                res.send({ message: `Incorrect Zone!` })
-                return next()
-            }
 
             const type: TransportType = TransportScraper.convertStringToType(typeString)
             if (!type) {
                 res.send({ message: `Incorrect Type!` })
+                return next()
+            }
+
+            const zone: Zone = Transports.getZone(zoneString)
+            if (!zone) {
+                res.send({ message: `Incorrect Zone!` })
                 return next()
             }
 
