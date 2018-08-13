@@ -16,10 +16,10 @@ export class TransportScraper {
     private mail: Emails
     private redisClient: redis.RedisClient
 
-    constructor(twitter: Twitter, mail: Emails) {
+    constructor(twitter: Twitter, mail: Emails, redisClient: redis.RedisClient) {
         this.twitter = twitter
         this.mail = mail
-        this.redisClient = redis.createClient(6379, 'redis')
+        this.redisClient = redisClient
 
         this.loadZones()
     }
@@ -69,14 +69,15 @@ export abstract class Zone extends EventEmitter {
     protected mail: Emails
     protected redisClient: redis.RedisClient
 
-    constructor(zoneName: string, 
+    constructor(
+        zoneName: string, 
         transports: { [key: number]: string }, 
         twitter: Twitter, 
         mail: Emails, 
         redisClient: redis.RedisClient,
         timeZone: string = 'Europe/Lisbon', 
-        updateCacheMin: number = 2) 
-    {
+        updateCacheMin: number = 2
+    ) {
         super()
 
         this.zoneName = zoneName
@@ -104,7 +105,7 @@ export abstract class Zone extends EventEmitter {
             const newCache = await this.getCache(type)
             for (let i = 0; i < newCache.length; ++i) {
                 const twitterInfo: string | boolean = await this.getTwitterInfo(type, i)
-                await this.twitter.req('statuses/update', { method: 'POST', formData: { status: `${twitterInfo}\n#(${os.hostname})` } })
+                await this.twitter.req('statuses/update', { method: 'POST', formData: { status: `${twitterInfo}\n#id(${os.hostname})` } })
             }
         } catch (err) {
             this.mail.sendErrorEmail(err.message)
