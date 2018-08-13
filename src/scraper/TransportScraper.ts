@@ -120,8 +120,8 @@ export abstract class Zone extends EventEmitter {
                 if (!isNaN(transportId)) {
                     const cache = await this.getCache(transportId)
                     const newCache: SystemType[] = await this.parseInformation(transportId, true)
-                    console.log(JSON.stringify(newCache))
-                    console.log(JSON.stringify(cache))
+                    console.log(JSON.stringify(await this.getCache(1)))
+                    console.log(JSON.stringify(await this.parseInformation(1, true)))
                     if (!cache || JSON.stringify(newCache) !== JSON.stringify(cache))
                     {
                         this.redisClient.set(`${this.zoneName}_${transportId}`, JSON.stringify(newCache))
