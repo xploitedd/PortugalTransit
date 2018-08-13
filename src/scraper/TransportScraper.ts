@@ -19,7 +19,7 @@ export class TransportScraper {
     constructor(twitter: Twitter, mail: Emails) {
         this.twitter = twitter
         this.mail = mail
-        this.redisClient = redis.createClient()
+        this.redisClient = redis.createClient(6379, 'redis')
 
         this.loadZones()
     }
