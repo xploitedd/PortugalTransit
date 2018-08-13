@@ -1,10 +1,13 @@
 import { TransportType, Zone, SystemType } from '../TransportScraper'
+import Twitter from '../../twitter/Twitter';
+import Emails from '../../emails';
+import redis from 'redis'
 
 export class Lisboa extends Zone {
-    constructor() {
+    constructor(twitter: Twitter, mail: Emails, redisClient: redis.RedisClient) {
         super('Lisboa', { 
             [TransportType.SUBWAY]: 'https://www.metrolisboa.pt/wp-admin/admin-ajax.php?action=estado_linhas_ajax_action',
-        })
+        }, twitter, mail, redisClient)
     }
 
     public async getTwitterInfo(type: TransportType, lineNumber: number): Promise<string | boolean> {
@@ -27,10 +30,11 @@ export class Lisboa extends Zone {
     }
 
     public async parseInformation(type: TransportType, forceUpdate?: boolean): Promise<any> {
-        if (this.cache[type] && !forceUpdate)
-            return this.cache[type]
-
         try {
+            const cache = await this.getCache(type)
+            if (cache && !forceUpdate)
+                return cache
+
             const body: string = await this.getInformation(type)
             const obj = this.getCheerioObject(body)
             let res: any

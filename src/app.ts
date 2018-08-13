@@ -2,6 +2,7 @@ import { TransportScraper } from './scraper/TransportScraper';
 import WebServer from './webserver'
 import Twitter from './twitter/Twitter'
 import Emails, { MailjetPerson } from './emails';
+import redis from 'redis'
 
 let config
 let consumer_key: string

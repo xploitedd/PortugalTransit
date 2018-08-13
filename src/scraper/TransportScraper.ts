@@ -6,15 +6,22 @@ import EventEmitter from 'events'
 import Twitter from '../twitter/Twitter';
 import { DateTime } from 'luxon'
 import Emails from '../emails';
+import redis from 'redis'
+import { promisify } from 'util'
+import os from 'os'
 
 const zones: { [key: string]: Zone } = {}
-let twitter: Twitter
-let mail: Emails
 export class TransportScraper {
-    constructor(tw: Twitter, ml: Emails) {
-        TransportScraper.loadZones()
-        twitter = tw
-        mail = ml
+    private twitter: Twitter
+    private mail: Emails
+    private redisClient: redis.RedisClient
+
+    constructor(twitter: Twitter, mail: Emails) {
+        this.twitter = twitter
+        this.mail = mail
+        this.redisClient = redis.createClient()
+
+        this.loadZones()
     }
 
     public getZone(zoneName: string): Zone {
@@ -25,12 +32,7 @@ export class TransportScraper {
         return undefined
     }
 
-    public static convertStringToType(str: string): TransportType {
-        str = str.toUpperCase()
-        return (<any>TransportType)[str]
-    }
-
-    private static loadZones() {
+    private loadZones() {
         let zoneLoading: { [key: string]: any } = {}
         const folder = fs.readdirSync(path.join(__dirname, 'zones'))
         folder.forEach(fileName => {
@@ -42,10 +44,15 @@ export class TransportScraper {
                 return
             
             zoneLoading[zname] = require(path.join(__dirname, 'zones', fileName))[zname]
-            zones[zname] = new zoneLoading[zname]();
+            zones[zname] = new zoneLoading[zname](this.twitter, this.mail, this.redisClient);
         })
 
         zoneLoading = {}
+    }
+
+    public static convertStringToType(str: string): TransportType {
+        str = str.toUpperCase()
+        return (<any>TransportType)[str]
     }
 
     private static capitalizeFirst(str: string): string {
@@ -57,20 +64,32 @@ export class TransportScraper {
 export abstract class Zone extends EventEmitter {
     public zoneName: string
     public transports: { [key: number]: string }
-    protected cache: { [key: number]: SystemType[] } = {}
     protected timeZone: string
+    protected twitter: Twitter
+    protected mail: Emails
+    protected redisClient: redis.RedisClient
 
-    constructor(zoneName: string, transports: { [key: number]: string }, timeZone: string = 'Europe/Lisbon', updateCacheMin: number = 2) {
+    constructor(zoneName: string, 
+        transports: { [key: number]: string }, 
+        twitter: Twitter, 
+        mail: Emails, 
+        redisClient: redis.RedisClient,
+        timeZone: string = 'Europe/Lisbon', 
+        updateCacheMin: number = 2) 
+    {
         super()
 
         this.zoneName = zoneName
         this.transports = transports
         this.timeZone = timeZone
+        this.twitter = twitter
+        this.mail = mail
+        this.redisClient = redisClient
 
         this.on('cacheChange', (zoneName, transportId) => {
             console.log(`[${this.getDateInZone()}][Cache] Updating zone ${zoneName} - ${TransportType[transportId]}`)
-            if ((zoneName === 'Lisboa' || zoneName === 'Porto') && transportId === 1){}
-                //this.postToTwitter(transportId)
+            if ((zoneName === 'Lisboa' || zoneName === 'Porto') && transportId === 1)
+                this.postToTwitter(transportId)
         })
 
         const updateCacheMS = updateCacheMin * 60000
@@ -81,13 +100,15 @@ export abstract class Zone extends EventEmitter {
     }
 
     public async postToTwitter(type: TransportType) {
-        const newCache = this.cache[type]
-        for (let i = 0; i < newCache.length; ++i) {
-            const twitterInfo: string | boolean = await this.getTwitterInfo(type, i)
-            twitter.req('statuses/update', { method: 'POST', formData: { status: twitterInfo } }).catch(err => {
-                mail.sendErrorEmail(err.message)
-                console.error(err)
-            })
+        try {
+            const newCache = await this.getCache(type)
+            for (let i = 0; i < newCache.length; ++i) {
+                const twitterInfo: string | boolean = await this.getTwitterInfo(type, i)
+                await this.twitter.req('statuses/update', { method: 'POST', formData: { status: `${twitterInfo}\n#(${os.hostname})` } })
+            }
+        } catch (err) {
+            this.mail.sendErrorEmail(err.message)
+            console.error(err)
         }
     }
 
@@ -96,16 +117,27 @@ export abstract class Zone extends EventEmitter {
             for (const transport in this.transports) {
                 const transportId = parseInt(transport)
                 if (!isNaN(transportId)) {
+                    const cache = await this.getCache(transportId)
                     const newCache: SystemType[] = await this.parseInformation(transportId, true)
-                    if (!this.cache[transportId] || JSON.stringify(newCache) !== JSON.stringify(this.cache[transportId]))
+                    if (!cache || JSON.stringify(newCache) !== JSON.stringify(cache))
                     {
-                        this.cache[transportId] = newCache
+                        this.redisClient.set(`${this.zoneName}_${transportId}`, JSON.stringify(newCache))
                         this.emit('cacheChange', this.zoneName, transportId)
                     }
                 }
             }
         } catch (err) {
             console.error(err)
+        }
+    }
+
+    public async getCache(type: TransportType): Promise<SystemType[]> {
+        try {
+            const getAsync = promisify(this.redisClient.get).bind(this.redisClient)
+            const cache = await getAsync(`${this.zoneName}_${type}`)
+            return JSON.parse(cache)
+        } catch (err) {
+            return Promise.reject(err)
         }
     }
 
@@ -126,7 +158,7 @@ export abstract class Zone extends EventEmitter {
 
             return body
         } catch (err) {
-            mail.sendErrorEmail(err)
+            this.mail.sendErrorEmail(err)
             return Promise.reject(err)
         }
     }
