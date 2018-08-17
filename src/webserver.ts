@@ -17,7 +17,7 @@ export default class WebServer {
             const typeString: string = req.params.type
 
             const type: TransportType = TransportScraper.convertStringToType(typeString)
-            if (!type) {
+            if (!TransportType[type]) {
                 res.send({ message: `Incorrect Type!` })
                 return next()
             }

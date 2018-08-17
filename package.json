@@ -23,6 +23,7 @@
   },
   "homepage": "https://github.com/iamkryfor/PortugalTransit#readme",
   "dependencies": {
+    "@types/bluebird": "^3.5.23",
     "@types/chalk": "^2.2.0",
     "@types/cheerio": "^0.22.8",
     "@types/form-data": "^2.2.1",
@@ -31,6 +32,7 @@
     "@types/oauth": "^0.9.0",
     "@types/redis": "^2.8.6",
     "@types/restify": "^7.2.3",
+    "bluebird": "^3.5.1",
     "chalk": "^2.4.1",
     "cheerio": "^1.0.0-rc.2",
     "form-data": "^2.3.2",

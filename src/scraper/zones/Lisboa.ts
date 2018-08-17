@@ -1,4 +1,4 @@
-import { TransportType, Zone, SystemType } from '../TransportScraper'
+import { TransportType, Zone, SystemType, TransportScraper } from '../TransportScraper'
 import Twitter from '../../twitter/Twitter';
 import Emails from '../../emails';
 import redis from 'redis'
@@ -7,6 +7,7 @@ export class Lisboa extends Zone {
     constructor(twitter: Twitter, mail: Emails, redisClient: redis.RedisClient) {
         super('Lisboa', { 
             [TransportType.SUBWAY]: 'https://www.metrolisboa.pt/wp-admin/admin-ajax.php?action=estado_linhas_ajax_action',
+            [TransportType.FERRY]: 'http://www.transtejo.pt/wp-admin/admin-ajax.php'
         }, twitter, mail, redisClient)
     }
 
@@ -35,13 +36,13 @@ export class Lisboa extends Zone {
             if (cache && !forceUpdate)
                 return cache
 
-            const body: string = await this.getInformation(type)
-            const obj = this.getCheerioObject(body)
             let res: any
-
             switch(type) {
                 case TransportType.SUBWAY:
-                    res = Lisboa.getSubwayStatus(obj)
+                    res = await this.getSubwayStatus()
+                    break
+                case TransportType.FERRY:
+                    res = await TransportScraper.getTranstejoStatus(this)
                     break
             }
 
@@ -51,51 +52,57 @@ export class Lisboa extends Zone {
         }
     }
 
-    private static getSubwayStatus(obj: CheerioStatic) {
-        const lines: SystemType[] = []
-        for (let i = 0; i < 4; ++i) {
-            const routeName = Lisboa.getLineStateByIndex(i, true)
-            const lineId = Lisboa.getLineStateByIndex(i)
+    private async getSubwayStatus() {
+        try {
+            const body: string = await this.getInformation(TransportType.SUBWAY)
+            const obj = Zone.getCheerioObject(body)
+            const lines: SystemType[] = []
+            for (let i = 0; i < 4; ++i) {
+                const routeName = Lisboa.getSubwayLineStateByIndex(i, true)
+                const lineId = Lisboa.getSubwayLineStateByIndex(i)
 
-            let routeFrequency: string
-            let statusMessage: string
-            let statusCode: number
+                let routeFrequency: string
+                let statusMessage: string
+                let statusCode: number
 
-            obj(lineId + ' div[id]').each((k: number, elem: any) => {
-                let data = elem.children[1].data
-                if (k % 2 === 0) {
-                    routeFrequency = data.slice(2) || 'N/A'
-                    if (routeFrequency !== 'N/A') {
-                        const freqSpl = routeFrequency.split(':')
-                        routeFrequency = `${freqSpl[0]}m:${freqSpl[1]}s`
-                    }
-                } else {
-                    statusCode = Lisboa.convertStatusMessageToCode(data)
-                    if ((routeFrequency === 'N/A' && statusCode !== 0) || statusCode === 2) {
-                        statusMessage = 'Existem problemas na circulação.'
-                        statusCode === 2
+                obj(lineId + ' div[id]').each((k: number, elem: any) => {
+                    let data = elem.children[1].data
+                    if (k % 2 === 0) {
+                        routeFrequency = data.slice(2) || 'N/A'
+                        if (routeFrequency !== 'N/A') {
+                            const freqSpl = routeFrequency.split(':')
+                            routeFrequency = `${freqSpl[0]}m:${freqSpl[1]}s`
+                        }
                     } else {
-                        statusMessage = data
+                        statusCode = Lisboa.convertSubwayStatusMessageToCode(data)
+                        if ((routeFrequency === 'N/A' && statusCode !== 0) || statusCode === 2) {
+                            statusMessage = 'Existem problemas na circulação.'
+                            statusCode = 2
+                        } else {
+                            statusMessage = data
+                        }
                     }
-                }
-            })
+                })
 
-            lines[i] = {
-                routeName,
-                routeId: i,
-                routeFrequency,
-                status: {
-                    message: statusMessage,
-                    code: statusCode
+                lines[i] = {
+                    routeName,
+                    routeId: i,
+                    routeFrequency,
+                    status: {
+                        message: statusMessage,
+                        code: statusCode
+                    }
                 }
             }
-        }
 
-        return lines
+            return lines
+        } catch (err) {
+            return Promise.reject(err)
+        }
     }
 
-    private static getLineStateByIndex(index: number, fullName?: boolean): string {
-        switch(index) {
+    private static getSubwayLineStateByIndex(index: number, fullName?: boolean): string {
+        switch (index) {
             case 0: 
                 return fullName ? 'Linha Azul' : '#estadoAzul'
             case 1:
@@ -109,8 +116,8 @@ export class Lisboa extends Zone {
         }
     }
 
-    private static convertStatusMessageToCode(message: string): number {
-        switch(message) {
+    private static convertSubwayStatusMessageToCode(message: string): number {
+        switch (message) {
             case 'Circulação normal.':
                 return 1
             case 'Serviço encerrado.':
