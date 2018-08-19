@@ -1,4 +1,4 @@
-import { TransportScraper } from './scraper/TransportScraper';
+import TransportScraper from './scraper/TransportScraper';
 import WebServer from './webserver'
 import Twitter from './twitter/Twitter'
 import fs from 'fs'

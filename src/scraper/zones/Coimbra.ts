@@ -1,24 +1,22 @@
-import { TransportType, Zone, SystemType } from '../TransportScraper'
-import Twitter from '../../twitter/Twitter';
-import Emails from '../../emails';
-import redis from 'redis'
+import TransportScraper, { TransportType, SystemType } from '../TransportScraper';
+import Zone from '../Zone'
 
 export class Coimbra extends Zone {
-    constructor(twitter: Twitter, mail: Emails, redisClient: redis.RedisClient) {
+    constructor() {
         super('Coimbra', { 
             [TransportType.BUS]: 'http://coimbra.move-me.mobi/Lines/GetLines?providerName=SMTUC',
-        }, twitter, mail, redisClient)
+        })
     }
 
     public async getTwitterInfo(type: TransportType): Promise<string | boolean> { return false }
 
-    public async parseInformation(type: TransportType, forceUpdate?: boolean): Promise<any> {
-        try {
-            const cache = await this.getCache(type)
-            if (cache && !forceUpdate)
-                return cache
+    protected async getSubwayStatus(): Promise<any> {}
 
-            const body: string = await this.getInformation(type)
+    protected async getFerryStatus(): Promise<any> {}
+
+    protected async getBusStatus(): Promise<any> {
+        try {
+            const body: string = await this.getInformation(TransportType.BUS)
             const json = JSON.parse(body)
             const length = Object.keys(json).length
             const stops: SystemType[] = []

@@ -1,34 +1,30 @@
 import fs from 'fs'
 import path from 'path'
-import fetch, { RequestInit } from 'node-fetch'
-import cheerio from 'cheerio'
-import EventEmitter from 'events'
+import fetch from 'node-fetch'
 import Twitter from '../twitter/Twitter';
-import { DateTime } from 'luxon'
 import Emails from '../emails';
 import redis from 'redis'
-import bluebird from 'bluebird'
-import os from 'os'
 import FormData from 'form-data'
+import Zone from './Zone'
 
-const zones: { [key: string]: Zone } = {}
-export class TransportScraper {
-    private twitter: Twitter
-    private mail: Emails
-    private redisClient: redis.RedisClient
+export default class TransportScraper {
+    public static zones: { [key: string]: Zone } = {}
+    public static twitter: Twitter
+    public static mail: Emails
+    public static redisClient: redis.RedisClient
 
     constructor(twitter: Twitter, mail: Emails, redisClient: redis.RedisClient) {
-        this.twitter = twitter
-        this.mail = mail
-        this.redisClient = redisClient
+        TransportScraper.twitter = twitter
+        TransportScraper.mail = mail
+        TransportScraper.redisClient = redisClient
 
         this.loadZones()
     }
 
     public getZone(zoneName: string): Zone {
         zoneName = TransportScraper.capitalizeFirst(zoneName)
-        if (zones[zoneName])
-            return zones[zoneName]
+        if (TransportScraper.zones[zoneName])
+            return TransportScraper.zones[zoneName]
 
         return undefined
     }
@@ -45,7 +41,7 @@ export class TransportScraper {
                 return
             
             zoneLoading[zname] = require(path.join(__dirname, 'zones', fileName))[zname]
-            zones[zname] = new zoneLoading[zname](this.twitter, this.mail, this.redisClient);
+            TransportScraper.zones[zname] = new zoneLoading[zname]();
         })
 
         zoneLoading = {}
@@ -63,8 +59,13 @@ export class TransportScraper {
 
     public static async getTranstejoStatus(zone: Zone): Promise<any> {
         try {
+            const pfetch = await fetch('http://www.transtejo.pt/')
+            const body = await pfetch.text()
+            const pobj = Zone.getCheerioObject(body)
+            const info = JSON.parse(pobj('script')[14].children[0].data.substring(36, 145))
+
             const action = 'partidasAjax-submit'
-            const partidasNonce = '02678738fb'
+            const partidasNonce = info.partidasNonce
 
             let zoneId: number[]
             switch (zone.zoneName) {
@@ -87,11 +88,11 @@ export class TransportScraper {
 
             const tFreq: { [key: number]: string } = {}
             const lines: { [key: number]: SystemType } = {}
-            for (const id in zoneId) {
+            for (const i in zoneId) {
                 const form = new FormData()
                 form.append('action', action)
                 form.append('partidasNonce', partidasNonce)
-                form.append('terminal', id)
+                form.append('terminal', zoneId[i])
 
                 const info = await zone.getInformation(TransportType.FERRY, { method: 'POST', body: form })
                 if (info === '-1')
@@ -110,7 +111,7 @@ export class TransportScraper {
                         const children: any[] = elem.children
                         if (lines[routeId]) {
                             const tempFreq = tFreq[routeId]
-                            if (tempFreq) {
+                            if (tempFreq && lines[routeId].stops[0] === children[1].children[0].data) {
                                 const splittedFreqOld = tempFreq.split(':')
                                 const hourOld = parseInt(splittedFreqOld[0])
                                 const minuteOld = parseInt(splittedFreqOld[1])
@@ -164,121 +165,6 @@ export class TransportScraper {
             default:
                 return null
         }
-    }
-}
-
-export abstract class Zone extends EventEmitter {
-    public zoneName: string
-    public transports: { [key: number]: string }
-    protected timeZone: string
-    protected twitter: Twitter
-    protected mail: Emails
-    protected redisClient: redis.RedisClient
-
-    constructor(
-        zoneName: string, 
-        transports: { [key: number]: string }, 
-        twitter: Twitter, 
-        mail: Emails, 
-        redisClient: redis.RedisClient,
-        timeZone: string = 'Europe/Lisbon', 
-        updateCacheMin: number = 2
-    ) {
-        super()
-
-        this.zoneName = zoneName
-        this.transports = transports
-        this.timeZone = timeZone
-        this.twitter = twitter
-        this.mail = mail
-        this.redisClient = redisClient
-
-        this.on('cacheChange', (zoneName, transportId) => {
-            console.log(`[${this.getDateInZone()}][Cache] Updating zone ${zoneName} - ${TransportType[transportId]}`)
-            if (twitter) {
-                if ((zoneName === 'Lisboa' || zoneName === 'Porto') && transportId === 1)
-                    this.postToTwitter(transportId)
-            }
-        })
-
-        const updateCacheMS = updateCacheMin * 60000
-        this.updateCache()
-        setInterval(() => this.updateCache(), updateCacheMS)
-
-        zones[zoneName] = this
-    }
-
-    public abstract async getTwitterInfo(type: TransportType, lineNumber: number): Promise<string | boolean>
-
-    public abstract async parseInformation(type: TransportType, forceUpdate?: boolean): Promise<any>
-
-    public async postToTwitter(type: TransportType) {
-        try {
-            const newCache = await this.getCache(type)
-            for (let i = 0; i < newCache.length; ++i) {
-                const twitterInfo: string | boolean = await this.getTwitterInfo(type, i)
-                await this.twitter.req('statuses/update', { method: 'POST', formData: { status: `${twitterInfo}\n#(server id: ${os.hostname})` } })
-            }
-        } catch (err) {
-            this.mail.sendErrorEmail(err.message)
-            console.error(err)
-        }
-    }
-
-    public async updateCache() {
-        try {
-            for (const transport in this.transports) {
-                const transportId = parseInt(transport)
-                if (!isNaN(transportId)) {
-                    const cache = await this.getCache(transportId)
-                    const newCache: SystemType[] = await this.parseInformation(transportId, true)
-                    if (!cache || JSON.stringify(newCache) !== JSON.stringify(cache))
-                    {
-                        this.redisClient.set(`${this.zoneName}_${transportId}`, JSON.stringify(newCache))
-                        this.emit('cacheChange', this.zoneName, transportId)
-                    }
-                }
-            }
-        } catch (err) {
-            console.error(err)
-        }
-    }
-
-    public async getCache(type: TransportType): Promise<SystemType[]> {
-        try {
-            const redisClient = this.redisClient
-            const getAsync = bluebird.promisify(redisClient.get, { context: redisClient })
-            const cache = await getAsync(`${this.zoneName}_${type}`)
-            return JSON.parse(cache)
-        } catch (err) {
-            return Promise.reject(err)
-        }
-    }
-
-    public async getInformation(type: TransportType, options?: RequestInit): Promise<string> {
-        try {
-            const requestUrl = this.transports[type]
-            const res = await fetch(requestUrl, options)
-            if (res.status !== 200) 
-                return Promise.reject(`Error Fetching: status code ${res.status}`)
-
-            const body = await res.text()
-            if (typeof body !== 'string')
-                return Promise.reject(`Error Fetching: body is not a string`)
-
-            return body
-        } catch (err) {
-            this.mail.sendErrorEmail(err)
-            return Promise.reject(err)
-        }
-    }
-
-    protected getDateInZone() {
-        return DateTime.local().setZone(this.timeZone).toFormat(`dd'/'LL'/'yy HH'h:'mm'm'`)
-    }
-
-    public static getCheerioObject(body: string): CheerioStatic {
-        return cheerio.load(body)
     }
 }
 

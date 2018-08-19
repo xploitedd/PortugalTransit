@@ -1,6 +1,7 @@
 import os from 'os'
 import restify from 'restify'
-import { TransportType, TransportScraper, Zone } from './scraper/TransportScraper'
+import TransportScraper, { TransportType } from './scraper/TransportScraper';
+import Zone from './scraper/Zone'
 
 export default class WebServer {
     public static startWebServer(port: number, Transports: TransportScraper) {

@@ -1,14 +1,12 @@
-import { TransportType, Zone, SystemType, TransportScraper } from '../TransportScraper'
-import Twitter from '../../twitter/Twitter';
-import Emails from '../../emails';
-import redis from 'redis'
+import TransportScraper, { TransportType, SystemType } from '../TransportScraper';
+import Zone from '../Zone'
 
 export class Lisboa extends Zone {
-    constructor(twitter: Twitter, mail: Emails, redisClient: redis.RedisClient) {
+    constructor() {
         super('Lisboa', { 
             [TransportType.SUBWAY]: 'https://www.metrolisboa.pt/wp-admin/admin-ajax.php?action=estado_linhas_ajax_action',
             [TransportType.FERRY]: 'http://www.transtejo.pt/wp-admin/admin-ajax.php'
-        }, twitter, mail, redisClient)
+        })
     }
 
     public async getTwitterInfo(type: TransportType, lineNumber: number): Promise<string | boolean> {
@@ -30,29 +28,18 @@ export class Lisboa extends Zone {
         }
     }
 
-    public async parseInformation(type: TransportType, forceUpdate?: boolean): Promise<any> {
+    protected async getFerryStatus(): Promise<any> {
         try {
-            const cache = await this.getCache(type)
-            if (cache && !forceUpdate)
-                return cache
-
-            let res: any
-            switch(type) {
-                case TransportType.SUBWAY:
-                    res = await this.getSubwayStatus()
-                    break
-                case TransportType.FERRY:
-                    res = await TransportScraper.getTranstejoStatus(this)
-                    break
-            }
-
+            const res = await TransportScraper.getTranstejoStatus(this)
             return res
         } catch (err) {
             return Promise.reject(err)
         }
     }
 
-    private async getSubwayStatus() {
+    protected async getBusStatus(): Promise<any> {}
+
+    protected async getSubwayStatus() {
         try {
             const body: string = await this.getInformation(TransportType.SUBWAY)
             const obj = Zone.getCheerioObject(body)

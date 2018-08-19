@@ -1,11 +1,9 @@
-import FormData from 'form-data';
 import TransportScraper, { TransportType } from '../TransportScraper';
 import Zone from '../Zone'
 
-export class Barreiro extends Zone {
+export class Montijo extends Zone {
     constructor() {
-        super('Barreiro', { 
-            [TransportType.BUS]: 'http://www.tcbarreiro.pt/realtime',
+        super('Montijo', {
             [TransportType.FERRY]: 'http://www.transtejo.pt/wp-admin/admin-ajax.php'
         })
     }
@@ -23,17 +21,5 @@ export class Barreiro extends Zone {
         }
     }
 
-    protected async getBusStatus(): Promise<any> {
-        try {
-            const form: FormData = new FormData()
-            form.append('getVehicles', 'true')
-
-            const body: string = await this.getInformation(TransportType.BUS, { method: 'POST', body: form })
-            const res = JSON.parse(body)
-            
-            return res
-        } catch (err) {
-            return Promise.reject(err)
-        }
-    }
+    protected async getBusStatus(): Promise<any> {}
 }
